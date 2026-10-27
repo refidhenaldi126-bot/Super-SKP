@@ -92,7 +92,13 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
   var UK="superskp_user", kunci=document.getElementById("kunci"), pesan=document.getElementById("pesanLogin"), tombol=document.getElementById("btnLogin"), client=null;
   function baca(){ try{ return JSON.parse(localStorage.getItem(UK)||"null"); }catch(e){ return null; } }
   function pasang(u){ var av=document.getElementById("av"); if(av&&u){ av.textContent=String(u.name||u.email||"R").trim().charAt(0).toUpperCase(); av.title=u.email||""; av.style.cursor="pointer"; } }
-  window.superskpAuth={ token:null, user:baca, minta:function(){ if(client) client.requestAccessToken({prompt:""}); } };
+  var tunggu=null;
+  window.superskpAuth={ token:null, exp:0, user:baca,
+    sah:function(){ return !!this.token && Date.now()<this.exp-60000; },
+    dapat:function(){ var self=this; return new Promise(function(ok,gagal){
+      if(self.sah()) return ok(self.token);
+      if(!client&&!siap()) return gagal(new Error("Google belum siap"));
+      tunggu={ok:ok,gagal:gagal}; client.requestAccessToken({prompt:""}); }); } };
   if(baca()) kunci.style.display="none";
   document.addEventListener("DOMContentLoaded",function(){
     pasang(baca());
@@ -104,20 +110,27 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
     client=google.accounts.oauth2.initTokenClient({
       client_id:CID, scope:SCOPE,
       callback:function(r){
-        if(r.error){ pesan.textContent="Login gagal ("+r.error+"). Coba lagi."; tombol.disabled=false; return; }
+        if(r.error){
+          if(tunggu){ tunggu.gagal(new Error(r.error)); tunggu=null; return; }
+          pesan.textContent="Login gagal ("+r.error+"). Coba lagi."; tombol.disabled=false; return; }
         if(!google.accounts.oauth2.hasGrantedAllScopes(r,"https://www.googleapis.com/auth/drive.file")){
+          if(tunggu){ tunggu.gagal(new Error("izin Drive belum diberikan")); tunggu=null; return; }
           pesan.textContent="Izin Google Drive belum diberikan. Ulangi dan centang semua izin."; tombol.disabled=false; return; }
         window.superskpAuth.token=r.access_token;
+        window.superskpAuth.exp=Date.now()+(+r.expires_in||3600)*1000;
+        if(tunggu){ tunggu.ok(r.access_token); tunggu=null; }
+        if(baca()){ document.dispatchEvent(new Event("superskp-token")); return; }
         fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}})
           .then(function(x){return x.json();})
           .then(function(i){
             var u={email:i.email,name:i.name,sub:i.sub};
             try{ localStorage.setItem(UK,JSON.stringify(u)); }catch(e){}
             pasang(u); kunci.style.display="none";
+            document.dispatchEvent(new Event("superskp-token"));
           })
           .catch(function(){ pesan.textContent="Gagal membaca data akun. Periksa internet lalu coba lagi."; tombol.disabled=false; });
       },
-      error_callback:function(){ pesan.textContent="Jendela login ditutup atau diblokir browser."; tombol.disabled=false; }
+      error_callback:function(){ if(tunggu){ tunggu.gagal(new Error("popup")); tunggu=null; return; } pesan.textContent="Jendela login ditutup atau diblokir browser."; tombol.disabled=false; }
     });
     return true;
   }
@@ -130,7 +143,7 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 })();
 </script>
 <div class="wrap">
-<header><div class="logo"><span data-ic="hex" data-s="22"></span><span>SUPER SKP</span></div><div class="avatar" id="av">R</div></header>
+<header><div class="logo"><span data-ic="hex" data-s="22"></span><span>SUPER SKP</span></div><div style="display:flex;align-items:center;gap:10px"><button id="syncBtn" type="button" aria-label="Sinkron ke Google Sheet" style="border:1px solid var(--line);background:var(--glass);color:var(--muted);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer">☁ Belum sinkron</button><div class="avatar" id="av">R</div></div></header>
 <main>
 <section id="dashboard" class="page active">
  <h2 id="hi">Halo 👋</h2><p class="sub" id="unit"></p>
@@ -204,7 +217,7 @@ const def={profil:{nama:'Repi Denaldi',nip:'',jabatan:'',unit:'Sekretariat DPRD 
 let S=load(),bulan=today().slice(0,7);
 function norm(d){return{profil:{...def.profil,...(d&&d.profil)},tupoksi:(d&&d.tupoksi)||[],kegiatan:(d&&d.kegiatan)||[]}}
 function load(){try{const r=localStorage.getItem(KEY);if(r)return norm(JSON.parse(r))}catch(e){}return structuredClone(def)}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Penyimpanan browser tidak tersedia')}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Penyimpanan browser tidak tersedia')}try{localStorage.setItem('superskp:ts',String(Date.now()))}catch(e){}if(window.superskpSync)superskpSync.jadwal()}
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2300)}
 function go(p){document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id===p));document.querySelectorAll('.ni').forEach(e=>e.classList.toggle('active',e.dataset.p===p));document.querySelector('main').scrollTop=0}
 function setBulan(v){if(v){bulan=v;render()}}
@@ -319,6 +332,93 @@ function render(){
 }
 document.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ic(e.dataset.ic,+e.dataset.s||22));fotoInit();
 render();
+</script>
+<script>
+(function(){
+  var A=window.superskpAuth, JUDUL="SUPER SKP DATA", TSK="superskp:ts", btn=document.getElementById("syncBtn");
+  var TAB=["profil","tupoksi","kegiatan","meta"], timer=null, sibuk=false, ulang=false;
+  function ts(){ try{ return +localStorage.getItem(TSK)||0; }catch(e){ return 0; } }
+  function setTs(v){ try{ localStorage.setItem(TSK,String(v)); }catch(e){} }
+  function idKey(){ var u=A.user(); return "superskp:sheet:"+(u&&u.sub||"x"); }
+  function status(t,warna){ btn.textContent=t; btn.style.color=warna||"var(--muted)"; }
+  function api(url,opt){
+    return A.dapat().then(function(tok){
+      opt=opt||{}; opt.headers=Object.assign({Authorization:"Bearer "+tok},opt.headers||{});
+      return fetch(url,opt);
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+" "+t.slice(0,160)); });
+      return r.json();
+    });
+  }
+  function json(m,b){ return {method:m,headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}; }
+  function cari(){
+    var q="name='"+JUDUL+"' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false";
+    return api("https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+encodeURIComponent(q)).then(function(r){ return r.files&&r.files[0]?r.files[0].id:null; });
+  }
+  function buat(){
+    return api("https://sheets.googleapis.com/v4/spreadsheets",json("POST",{properties:{title:JUDUL},sheets:TAB.map(function(n){return {properties:{title:n}};})})).then(function(r){ return r.spreadsheetId; });
+  }
+  function sheetId(){
+    var id=null; try{ id=localStorage.getItem(idKey()); }catch(e){}
+    if(id) return Promise.resolve(id);
+    return cari().then(function(f){ return f||buat(); }).then(function(x){ try{ localStorage.setItem(idKey(),x); }catch(e){} return x; });
+  }
+  function baris(){
+    var p=S.profil;
+    return {
+      profil:[["nama","nip","jabatan","unit","atasan","nipAtasan"],[p.nama,p.nip,p.jabatan,p.unit,p.atasan,p.nipAtasan]],
+      tupoksi:[["id","teks","urutan"]].concat(S.tupoksi.map(function(t,i){return [t.id,t.teks,i+1];})),
+      kegiatan:[["id","tgl","tupoksiId","uraian","output","jam","jamAkhir","ket","foto"]].concat(S.kegiatan.map(function(k){return [k.id,k.tgl,k.tupoksiId,k.uraian,k.output,k.jam||"",k.jamAkhir||"",k.ket||"",""];})),
+      meta:[["updatedAt"],[String(ts())]]
+    };
+  }
+  function baca(id){
+    var u="https://sheets.googleapis.com/v4/spreadsheets/"+id+"/values:batchGet?"+TAB.map(function(n){return "ranges="+n;}).join("&");
+    return api(u).then(function(r){
+      var v={}; (r.valueRanges||[]).forEach(function(x,i){ v[TAB[i]]=x.values||[]; }); return v;
+    });
+  }
+  function tulis(id){
+    var d=baris();
+    return api("https://sheets.googleapis.com/v4/spreadsheets/"+id+"/values:batchClear",json("POST",{ranges:TAB}))
+      .then(function(){ return api("https://sheets.googleapis.com/v4/spreadsheets/"+id+"/values:batchUpdate",json("POST",{valueInputOption:"RAW",data:TAB.map(function(n){return {range:n+"!A1",values:d[n]};})})); });
+  }
+  function terapkan(v){
+    var pr=(v.profil[1]||[]), kk=["nama","nip","jabatan","unit","atasan","nipAtasan"], profil={};
+    kk.forEach(function(k,i){ profil[k]=pr[i]||""; });
+    var tup=v.tupoksi.slice(1).filter(function(r){return r[0];}).map(function(r){return {id:r[0],teks:r[1]||""};});
+    var keg=v.kegiatan.slice(1).filter(function(r){return r[0];}).map(function(r){return {id:r[0],tgl:r[1]||"",tupoksiId:r[2]||"",uraian:r[3]||"",output:r[4]||"",jam:r[5]||"",jamAkhir:r[6]||"",ket:r[7]||""};});
+    S=norm({profil:profil,tupoksi:tup,kegiatan:keg});
+    try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+    render();
+  }
+  function ada(){ return S.tupoksi.length||S.kegiatan.length; }
+  function sinkron(){
+    if(sibuk){ ulang=true; return Promise.resolve(); }
+    sibuk=true; status("☁ Menyinkronkan...");
+    if(!ts()&&ada()) setTs(Date.now());
+    return sheetId().then(function(id){
+      return baca(id).then(function(v){
+        var rt=+((v.meta[1]||[])[0])||0, lt=ts();
+        if(rt>lt){ terapkan(v); setTs(rt); toast("Data diperbarui dari Google Sheet"); return; }
+        if(lt>rt) return tulis(id);
+      });
+    }).then(function(){ status("☁ Tersinkron","var(--ok,#22c55e)"); })
+    .catch(function(e){ console.error(e); status("☁ Gagal, ketuk lagi","var(--err,#ef4444)"); toast("Sinkron gagal: "+String(e.message||e).slice(0,80)); })
+    .then(function(){ sibuk=false; if(ulang){ ulang=false; jadwal(); } });
+  }
+  function jadwal(){
+    clearTimeout(timer);
+    if(!A.user()) return;
+    if(!A.sah()){ status("☁ Belum sinkron, ketuk"); return; }
+    status("☁ Menunggu..."); timer=setTimeout(sinkron,2500);
+  }
+  window.superskpSync={ jadwal:jadwal, sinkron:sinkron };
+  btn.addEventListener("click",function(){ sinkron(); });
+  document.addEventListener("superskp-token",function(){ sinkron(); });
+  window.addEventListener("online",function(){ if(A.sah()) sinkron(); });
+  if(A.user()) setTimeout(function(){ A.dapat().then(function(){ sinkron(); }).catch(function(){ status("☁ Ketuk untuk sinkron"); }); },1500);
+})();
 </script>
 </body>
 </html>
