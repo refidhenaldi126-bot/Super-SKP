@@ -201,7 +201,7 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 
 <div id="sheet" onclick="if(event.target===this)closeSheet()"><div class="panel" role="dialog" aria-modal="true"><h3 id="sTitle" style="font-size:17px"></h3><div id="sBody"></div>
  <div class="acts"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" id="sOk" onclick="sheetOk()">Simpan</button></div></div></div>
-<div id="prev"><div class="pbar"><button class="btn ghost" onclick="closePrev()">Tutup</button><button class="btn" onclick="window.print()"><span data-ic="print" data-s="18"></span> Cetak atau PDF</button></div><div class="paper" id="cetak"></div><div class="paper lamp" id="lamp" style="display:none"></div></div>
+<div id="prev"><div class="pbar" style="flex-wrap:wrap"><button class="btn ghost" onclick="closePrev()">Tutup</button><button class="btn" onclick="window.print()"><span data-ic="print" data-s="18"></span> Cetak atau PDF</button><button class="btn ghost" id="btnPdf" type="button" onclick="window.superskpSync&&superskpSync.simpanPdf()">☁ Simpan ke Drive</button><a id="pdfLink" target="_blank" rel="noopener" class="btn ghost" style="display:none;flex-basis:100%;text-align:center;text-decoration:none"></a></div><div class="paper" id="cetak"></div><div class="paper lamp" id="lamp" style="display:none"></div></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -227,7 +227,7 @@ function closeSheet(){$('sheet').classList.remove('open');_ok=null}
 function sheetOk(){if(_ok&&_ok()===false)return;closeSheet()}
 function ask(msg,fn){openSheet('Konfirmasi',`<p class="muted" style="margin-top:8px;font-size:13px">${esc(msg)}</p>`,()=>{fn()},'Hapus')}
 function openPrev(m){const lm=m==='lamp';$('lamp').style.display=lm?'block':'none';$('cetak').style.display=lm?'none':'';$('prev').classList.add('open')}
-function closePrev(){$('prev').classList.remove('open');$('lamp').style.display='none';$('cetak').style.display=''}
+function closePrev(){var pl=$('pdfLink');if(pl)pl.style.display='none';$('prev').classList.remove('open');$('lamp').style.display='none';$('cetak').style.display=''}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closePrev()}});
 
 let FOTO={},idb=null,tmpFoto=[];
@@ -526,7 +526,104 @@ render();
     if(!A.sah()){ status("☁ Belum sinkron, ketuk"); return; }
     status("☁ Menunggu..."); timer=setTimeout(sinkron,2500);
   }
-  window.superskpSync={ jadwal:jadwal, sinkron:sinkron };
+
+  /* ---------- PDF ke Drive ---------- */
+  var pdfSibuk=false, libP=null;
+  function muatSkrip(src){ return new Promise(function(ok,gagal){ var e=document.createElement("script"); e.src=src; e.onload=ok; e.onerror=function(){ gagal(new Error("Gagal memuat pustaka PDF. Periksa internet.")); }; document.head.appendChild(e); }); }
+  function lib(){
+    if(window.html2canvas&&window.jspdf) return Promise.resolve();
+    if(!libP){ libP=muatSkrip("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js").then(function(){ return muatSkrip("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"); }); libP.catch(function(){ libP=null; }); }
+    return libP;
+  }
+  function tc(t){ return String(t).toLowerCase().replace(/(^|[\s(])([a-zà-ÿ])/g,function(m,a,b){ return a+b.toUpperCase(); }); }
+  function bersih(t){ return String(t).replace(/[\\\/:*?"'<>|]/g," ").replace(/\s+/g," ").trim().slice(0,120); }
+  function infoPdf(el,lamp){
+    var tahun=(typeof bulan==="string"?bulan.slice(0,4):String(new Date().getFullYear())), nama;
+    if(lamp){
+      var h4=el.querySelector("h4"), per=h4?h4.innerText.replace(/\s+/g," ").trim():"", m=per.match(/TAHUN ANGGARAN (\d{4})/);
+      if(m) tahun=m[1];
+      nama="Lampiran Foto "+tc(per.replace(/\s*-\s*TAHUN ANGGARAN \d{4}/i,""));
+      if(el.querySelectorAll("h1").length>1) nama+=" - Semua Tupoksi";
+      else {
+        var tr=Array.prototype.find.call(el.querySelectorAll("tr"),function(r){ return r.cells[0]&&/Poin Tupoksi SKP/i.test(r.cells[0].innerText); });
+        if(tr&&tr.cells[1]){ var tx=tr.cells[1].innerText.trim(), i=S.tupoksi.findIndex(function(t){ return String(t.teks).trim()===tx; }); if(i>=0) nama+=" - Tupoksi "+(i+1); }
+      }
+    } else {
+      var h1=el.querySelector("h1"), j=h1?h1.innerText.replace(/\s+/g," ").trim():"Laporan", y=j.match(/(\d{4})/);
+      if(y) tahun=y[1];
+      nama="Laporan Harian "+tc(j.replace(/^LAPORAN KEGIATAN HARIAN PEGAWAI\s*/i,""));
+    }
+    return {nama:bersih(nama),tahun:tahun};
+  }
+  function buatPdf(el,lamp){
+    var pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"}), secs=[];
+    if(lamp){ var cur=[]; Array.prototype.forEach.call(el.children,function(c){ if(c.classList.contains("pgb")){ if(cur.length) secs.push(cur); cur=[]; } else cur.push(c); }); if(cur.length) secs.push(cur); }
+    else secs.push(Array.prototype.slice.call(el.childNodes));
+    var stage=document.createElement("div"); stage.style.cssText="position:fixed;left:-10000px;top:0;width:718px;background:#fff;z-index:-1";
+    document.body.appendChild(stage);
+    var pageCss=277/190*718, pertama=true, rantai=Promise.resolve();
+    secs.forEach(function(nodes,idx){
+      rantai=rantai.then(function(){
+        var sec=document.createElement("div"); sec.className=el.className;
+        sec.style.cssText="width:718px;max-width:none;padding:0;margin:0;overflow:visible;border-radius:0;background:#fff;color:#000;display:block";
+        nodes.forEach(function(n){ sec.appendChild(n.cloneNode(true)); });
+        stage.innerHTML=""; stage.appendChild(sec);
+        var imgs=Array.prototype.slice.call(sec.querySelectorAll("img"));
+        return Promise.all(imgs.map(function(i){ return i.decode?i.decode().catch(function(){}):Promise.resolve(); })).then(function(){
+          var H=sec.scrollHeight, top=sec.getBoundingClientRect().top, cands=[];
+          sec.querySelectorAll("tr,.sig").forEach(function(x){ cands.push(x.getBoundingClientRect().bottom-top); });
+          sec.querySelectorAll("h5").forEach(function(x){ cands.push(x.getBoundingClientRect().top-top); });
+          cands.sort(function(a,b){ return a-b; });
+          var sc=Math.max(1,Math.min(2,30000/H));
+          return window.html2canvas(sec,{scale:sc,backgroundColor:"#fff",useCORS:true,logging:false,width:718,windowWidth:718}).then(function(cv){
+            var y=0;
+            while(y<H-2){
+              if(!pertama) pdf.addPage(); pertama=false;
+              var lim=y+pageCss, end;
+              if(lim>=H) end=H;
+              else { end=lim; var min=y+pageCss*0.35; for(var i=cands.length-1;i>=0;i--){ if(cands[i]<=lim&&cands[i]>min){ end=cands[i]; break; } } }
+              var sy=Math.round(y*sc), h=Math.max(1,Math.min(Math.round((end-y)*sc),cv.height-sy)), tmp=document.createElement("canvas");
+              tmp.width=cv.width; tmp.height=h;
+              var cx=tmp.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,tmp.width,h); cx.drawImage(cv,0,sy,cv.width,h,0,0,cv.width,h);
+              pdf.addImage(tmp.toDataURL("image/jpeg",0.88),"JPEG",10,10,190,(end-y)/718*190);
+              y=end;
+            }
+          });
+        });
+      });
+    });
+    return rantai.then(function(){ document.body.removeChild(stage); return pdf.output("blob"); },function(e){ document.body.removeChild(stage); throw e; });
+  }
+  function unggahPdf(blob,nama,tahun,ulangi){
+    return folder("SUPER SKP").then(function(a){ return folder("PDF",a); }).then(function(b){ return folder(tahun,b); }).then(function(fid){
+      var q="name='"+nama+".pdf' and '"+fid+"' in parents and trashed=false";
+      return api("https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+encodeURIComponent(q)).then(function(r){
+        if(r.files&&r.files[0])
+          return api("https://www.googleapis.com/upload/drive/v3/files/"+r.files[0].id+"?uploadType=media&fields=id,webViewLink",{method:"PATCH",headers:{"Content-Type":"application/pdf"},body:blob});
+        var bd="skp"+Date.now().toString(36), meta={name:nama+".pdf",parents:[fid],mimeType:"application/pdf"};
+        var body=new Blob(["--"+bd+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify(meta)+"\r\n--"+bd+"\r\nContent-Type: application/pdf\r\n\r\n",blob,"\r\n--"+bd+"--"]);
+        return api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+bd},body:body});
+      });
+    }).catch(function(e){
+      if(!ulangi&&e.kode===404){ try{ localStorage.removeItem("superskp:fold:"+uk()); }catch(x){} return unggahPdf(blob,nama,tahun,true); }
+      throw e;
+    });
+  }
+  function simpanPdf(){
+    if(!A.user()){ toast("Masuk dengan Google dulu"); return; }
+    if(pdfSibuk) return;
+    var lamp=document.getElementById("lamp").style.display==="block", el=document.getElementById(lamp?"lamp":"cetak");
+    var b=document.getElementById("btnPdf"), lk=document.getElementById("pdfLink"), t0=b.textContent, info=infoPdf(el,lamp);
+    pdfSibuk=true; b.disabled=true; lk.style.display="none"; b.textContent="Membuat PDF...";
+    A.dapat().then(lib).then(function(){ return buatPdf(el,lamp); }).then(function(blob){
+      b.textContent="Mengunggah..."; return unggahPdf(blob,info.nama,info.tahun);
+    }).then(function(r){
+      toast("PDF tersimpan di Drive");
+      if(r.webViewLink){ lk.href=r.webViewLink; lk.textContent="✓ Tersimpan: SUPER SKP / PDF / "+info.tahun+". Ketuk untuk membuka"; lk.style.display="block"; }
+    }).catch(function(e){ console.error(e); toast("PDF gagal: "+String(e.message||e).slice(0,80)); })
+    .then(function(){ pdfSibuk=false; b.disabled=false; b.textContent=t0; });
+  }
+  window.superskpSync={ jadwal:jadwal, sinkron:sinkron, simpanPdf:simpanPdf };
   btn.addEventListener("click",function(){ sinkron(); });
   document.addEventListener("superskp-token",function(){ sinkron(); });
   window.addEventListener("online",function(){ if(A.sah()) sinkron(); });
