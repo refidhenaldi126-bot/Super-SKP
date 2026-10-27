@@ -185,6 +185,7 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
   <div class="tools"><select id="twSel" aria-label="Periode" onchange="renderTw()"><option value="1">Triwulan I (Jan - Mar)</option><option value="2">Triwulan II (Apr - Jun)</option><option value="3">Triwulan III (Jul - Sep)</option><option value="4">Triwulan IV (Okt - Des)</option><option value="F">Final (Jan - Des)</option></select><input id="twYear" type="number" min="2020" max="2100" aria-label="Tahun" onchange="renderTw()"></div>
   <label style="display:flex;align-items:center;gap:8px;margin:4px 0 8px"><input type="checkbox" id="twFoto" checked style="width:auto" onchange="renderTw()"> Sertakan foto kegiatan</label>
   <div id="twList"></div><button class="btn full" id="twAll" onclick="printTwAll()"></button></div>
+ <div class="card"><h3>Arsip teks ke Google Docs</h3><p class="muted" style="margin:4px 0 8px">Menyimpan teks kegiatan bulan yang dipilih (tanpa foto) sebagai Google Docs, satu dokumen per tupoksi. Hemat penyimpanan Drive.</p><button class="btn full" id="btnDocs" type="button" onclick="window.superskpSync&&superskpSync.simpanDocs()">☁ Simpan bulan ini ke Google Docs</button><a id="docsLink" target="_blank" rel="noopener" style="display:none;margin-top:10px;text-align:center;color:var(--accent)"></a></div>
  <div class="tools"><input id="q" type="search" placeholder="Cari uraian atau output" aria-label="Cari" oninput="renderKeg()"><select id="ft" aria-label="Filter tupoksi" onchange="renderKeg()"></select></div>
  <div id="kegList"></div>
 </section>
@@ -623,7 +624,88 @@ render();
     }).catch(function(e){ console.error(e); toast("PDF gagal: "+String(e.message||e).slice(0,80)); })
     .then(function(){ pdfSibuk=false; b.disabled=false; b.textContent=t0; });
   }
-  window.superskpSync={ jadwal:jadwal, sinkron:sinkron, simpanPdf:simpanPdf };
+
+  /* ---------- Arsip teks ke Google Docs ---------- */
+  var NB=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"], docsSibuk=false;
+  function hariTgl(iso){ try{ return fmt(iso,{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }catch(e){ return iso; } }
+  function isiDokumen(t,no,ym,ks){
+    var p=S.profil, bl=NB[+ym.slice(5,7)-1]+" "+ym.slice(0,4), L=[];
+    function add(tx,gaya,tebal){ L.push({t:String(tx==null?"":tx),g:gaya||"NORMAL_TEXT",b:tebal||0}); }
+    function kv(k,v){ add(k+": "+v,"NORMAL_TEXT",k.length+1); }
+    add("Tupoksi "+no+" - "+bl,"TITLE");
+    kv("Poin tupoksi",t.teks);
+    kv("Nama",p.nama||"-"); kv("NIP",p.nip||"-"); kv("Jabatan",p.jabatan||"-"); kv("Unit kerja",p.unit||"-");
+    kv("Jumlah kegiatan",String(ks.length));
+    add("");
+    ks.forEach(function(k){
+      add(hariTgl(k.tgl),"HEADING_2");
+      var w=[k.jam,k.jamAkhir].filter(Boolean).join(" - ").replace(/:/g,".");
+      if(w) kv("Waktu",w+" WIB");
+      kv("Uraian",k.uraian||"-"); kv("Output",k.output||"-"); kv("Keterangan",k.ket||"-");
+      var nf=(FOTO[k.id]||[]).length; if(nf) kv("Foto kegiatan",nf+" foto (tidak disertakan di dokumen ini)");
+      add("");
+    });
+    return L;
+  }
+  function permintaanDoc(L,akhir){
+    var teks="", rg=[], r=[];
+    L.forEach(function(l){ var a=teks.length+1; teks+=l.t+"\n"; rg.push({a:a,z:a+l.t.length+1,l:l}); });
+    if(akhir>2) r.push({deleteContentRange:{range:{startIndex:1,endIndex:akhir-1}}});
+    r.push({insertText:{location:{index:1},text:teks}});
+    r.push({updateParagraphStyle:{range:{startIndex:1,endIndex:teks.length+1},paragraphStyle:{namedStyleType:"NORMAL_TEXT"},fields:"namedStyleType"}});
+    r.push({updateTextStyle:{range:{startIndex:1,endIndex:teks.length+1},textStyle:{bold:false},fields:"bold"}});
+    rg.forEach(function(x){
+      if(x.l.g!=="NORMAL_TEXT") r.push({updateParagraphStyle:{range:{startIndex:x.a,endIndex:x.z},paragraphStyle:{namedStyleType:x.l.g},fields:"namedStyleType"}});
+      if(x.l.b) r.push({updateTextStyle:{range:{startIndex:x.a,endIndex:x.a+x.l.b},textStyle:{bold:true},fields:"bold"}});
+    });
+    return r;
+  }
+  function tulisDoc(fid,nama,L,ulangi){
+    var q="name='"+nama+"' and '"+fid+"' in parents and mimeType='application/vnd.google-apps.document' and trashed=false";
+    return api("https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+encodeURIComponent(q)).then(function(r){
+      if(r.files&&r.files[0]) return r.files[0].id;
+      return api("https://www.googleapis.com/drive/v3/files?fields=id",json("POST",{name:nama,mimeType:"application/vnd.google-apps.document",parents:[fid]})).then(function(x){ return x.id; });
+    }).then(function(did){
+      return api("https://docs.googleapis.com/v1/documents/"+did+"?fields=body(content(endIndex))").then(function(d){
+        var c=(d.body&&d.body.content)||[], akhir=c.length?c[c.length-1].endIndex:2;
+        return api("https://docs.googleapis.com/v1/documents/"+did+":batchUpdate",json("POST",{requests:permintaanDoc(L,akhir)}));
+      });
+    });
+  }
+  function simpanDocs(){
+    if(!A.user()){ toast("Masuk dengan Google dulu"); return; }
+    if(docsSibuk) return;
+    var ym=bulan, b=document.getElementById("btnDocs"), lk=document.getElementById("docsLink"), t0=b.textContent;
+    var grup=[]; S.tupoksi.forEach(function(t,i){
+      var ks=S.kegiatan.filter(function(k){ return k.tupoksiId===t.id&&String(k.tgl).slice(0,7)===ym; }).sort(function(a,c){ return a.tgl<c.tgl?-1:a.tgl>c.tgl?1:0; });
+      if(ks.length) grup.push({t:t,no:i+1,ks:ks});
+    });
+    if(!grup.length){ toast("Belum ada kegiatan di bulan ini"); return; }
+    docsSibuk=true; b.disabled=true; lk.style.display="none";
+    var nm=NB[+ym.slice(5,7)-1], folderId=null, n=0;
+    A.dapat().then(function(){ b.textContent="Menyiapkan folder..."; return folder("SUPER SKP"); })
+    .then(function(a){ return folder("Dokumen",a); })
+    .then(function(a){ return folder(ym.slice(0,4),a); })
+    .then(function(a){ return folder(ym.slice(5,7)+" "+nm,a); })
+    .then(function(fid){
+      folderId=fid; var rantai=Promise.resolve();
+      grup.forEach(function(g){
+        rantai=rantai.then(function(){
+          b.textContent="Membuat dokumen "+(++n)+"/"+grup.length;
+          return tulisDoc(fid,bersih("Tupoksi "+g.no+" - "+nm+" "+ym.slice(0,4)),isiDokumen(g.t,g.no,ym,g.ks));
+        });
+      });
+      return rantai;
+    }).then(function(){
+      toast(grup.length+" dokumen tersimpan di Drive");
+      lk.href="https://drive.google.com/drive/folders/"+folderId; lk.textContent="✓ Tersimpan di SUPER SKP / Dokumen / "+ym.slice(0,4)+" / "+ym.slice(5,7)+" "+nm+". Ketuk untuk membuka"; lk.style.display="block";
+    }).catch(function(e){
+      console.error(e); var m=String(e.message||e);
+      if(/docs\.googleapis|accessNotConfigured|SERVICE_DISABLED|403/.test(m)) m="Google Docs API belum aktif atau izin ditolak. "+m;
+      toast("Gagal: "+m.slice(0,90));
+    }).then(function(){ docsSibuk=false; b.disabled=false; b.textContent=t0; });
+  }
+  window.superskpSync={ jadwal:jadwal, sinkron:sinkron, simpanPdf:simpanPdf, simpanDocs:simpanDocs };
   btn.addEventListener("click",function(){ sinkron(); });
   document.addEventListener("superskp-token",function(){ sinkron(); });
   window.addEventListener("online",function(){ if(A.sah()) sinkron(); });
