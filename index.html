@@ -193,15 +193,15 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
   var tunggu=null;
   window.superskpAuth={ token:null, exp:0, user:baca,
     sah:function(){ return !!this.token && Date.now()<this.exp-60000; },
-    dapat:function(){ var self=this; return new Promise(function(ok,gagal){
-      if(self.sah()) return ok(self.token);
+    dapat:function(paksa){ var self=this; return new Promise(function(ok,gagal){
+      if(!paksa&&self.sah()) return ok(self.token);
       if(!client&&!siap()) return gagal(new Error("Google belum siap"));
-      tunggu={ok:ok,gagal:gagal}; client.requestAccessToken({prompt:""}); }); } };
+      var u=baca(); tunggu={ok:ok,gagal:gagal}; client.requestAccessToken({prompt:"",hint:u&&u.email||undefined}); }); } };
   if(baca()) kunci.style.display="none";
   document.addEventListener("DOMContentLoaded",function(){
     pasang(baca());
     var av=document.getElementById("av");
-    if(av) av.addEventListener("click",function(){ var u=baca(); if(u&&confirm("Keluar dari akun "+u.email+"?")){ try{ localStorage.removeItem(UK); }catch(e){} location.reload(); } });
+    if(av) av.addEventListener("click",function(){ if(window.superskpAkun) superskpAkun.buka(); });
   });
   function siap(){
     if(!(window.google&&google.accounts&&google.accounts.oauth2)) return false;
@@ -216,6 +216,8 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
           pesan.textContent="Izin Google Drive belum diberikan. Ulangi dan centang semua izin."; tombol.disabled=false; return; }
         window.superskpAuth.token=r.access_token;
         window.superskpAuth.exp=Date.now()+(+r.expires_in||3600)*1000;
+        clearTimeout(window.superskpAuth.t);
+        window.superskpAuth.t=setTimeout(function(){ if(window.superskpSync&&superskpSync.sambungDiam) superskpSync.sambungDiam(); },Math.max(5000,(+r.expires_in||3600)*1000-5*60000));
         if(tunggu){ tunggu.ok(r.access_token); tunggu=null; }
         if(baca()){ document.dispatchEvent(new Event("superskp-token")); return; }
         fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}})
@@ -615,14 +617,14 @@ render();
         }
         return passFoto().then(function(berubah){ if(lt>rt||berubah) return tulis(id); });
       });
-    }).then(function(){ status("☁ Tersinkron","var(--ok,#22c55e)"); })
+    }).then(function(){ try{ localStorage.setItem("superskp:lastsync",String(ts())); }catch(e){} perlu=false; status("☁ Tersinkron","var(--ok,#22c55e)"); })
     .catch(function(e){ console.error(e); status("☁ Gagal, ketuk lagi","var(--err,#ef4444)"); toast("Sinkron gagal: "+String(e.message||e).slice(0,80)); })
     .then(function(){ sibuk=false; if(ulang){ ulang=false; jadwal(); } });
   }
   function jadwal(){
     clearTimeout(timer);
     if(!A.user()) return;
-    if(!A.sah()){ status("☁ Belum sinkron, ketuk"); return; }
+    if(!A.sah()){ perlu=true; status("☁ Ketuk layar untuk menyimpan"); return; }
     status("☁ Menunggu..."); timer=setTimeout(sinkron,2500);
   }
 
@@ -896,7 +898,44 @@ render();
     }).catch(function(e){ console.error(e); toast("Docs gagal: "+String(e.message||e).slice(0,80)); })
     .then(function(){ docsSibuk=false; b.disabled=false; b.textContent=t0; });
   }
-  window.superskpSync={ jadwal:jadwal, sinkron:sinkron, simpanPdf:simpanPdf, simpanDocs:simpanDocs };
+
+  /* ---------- Sambung token otomatis ---------- */
+  var perlu=false, cd=0;
+  function tertunda(){ var l=0; try{ l=+localStorage.getItem("superskp:lastsync")||0; }catch(e){} return ada()&&ts()>l; }
+  function sambungDiam(){
+    if(!A.user()||sibuk) return;
+    A.dapat(true).then(function(){ perlu=false; if(tertunda()) sinkron(); }).catch(function(){ perlu=true; if(tertunda()) status("☁ Ketuk layar untuk menyimpan"); });
+  }
+  document.addEventListener("click",function(e){
+    if(!perlu||!A.user()||A.sah()||sibuk) return;
+    if(e.target&&e.target.closest&&e.target.closest("#kunci,#demo,#syncBtn")) return;
+    if(Date.now()<cd) return; cd=Date.now()+20000;
+    A.dapat().then(function(){ perlu=false; sinkron(); }).catch(function(){ status("☁ Ketuk ☁ untuk menyambung"); });
+  },true);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden&&A.user()&&!A.sah()&&tertunda()){ perlu=true; status("☁ Ketuk layar untuk menyimpan"); } });
+
+  /* ---------- Menu akun: keluar, atau keluar + hapus data perangkat ---------- */
+  function keluar(hapus){
+    try{ localStorage.removeItem("superskp_user"); }catch(e){}
+    if(!hapus){ location.reload(); return; }
+    try{ Object.keys(localStorage).filter(function(k){ return k.indexOf("superskp")===0&&k!=="superskp_demo_seen"; }).forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+    var selesai=function(){ location.reload(); };
+    try{ if(typeof idb!=="undefined"&&idb&&idb.close) idb.close(); var r=indexedDB.deleteDatabase("superskp-foto"); r.onsuccess=r.onerror=r.onblocked=selesai; setTimeout(selesai,1500); }catch(e){ selesai(); }
+  }
+  function akunBuka(){
+    var u=A.user(); if(!u) return;
+    var tunda=tertunda();
+    var h='<p style="margin:8px 0;font-size:14px"><b>'+esc(u.name||"")+'</b><br><span class="muted">'+esc(u.email||"")+'</span></p>'
+     +(tunda?'<p style="margin:8px 0;font-size:13px;color:var(--err)">Ada perubahan yang belum tersinkron ke Google Sheet. Ketuk ☁ dulu agar tidak hilang.</p>':'<p class="muted" style="margin:8px 0;font-size:13px">Semua data sudah tersinkron ke Google Sheet.</p>')
+     +'<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px"><input type="checkbox" id="fHapus" style="width:auto;margin-top:3px"><span style="font-size:13px;line-height:1.5">Hapus juga data di perangkat ini. Disarankan untuk HP atau laptop bersama. Data di Google Sheet dan Drive tidak ikut terhapus.</span></label>';
+    openSheet("Akun",h,function(){
+      var hapus=document.getElementById("fHapus").checked;
+      if(hapus&&tunda&&!confirm("Perubahan yang belum tersinkron akan hilang. Tetap hapus data di perangkat ini?")) return false;
+      keluar(hapus);
+    },"Keluar");
+  }
+  window.superskpAkun={buka:akunBuka};
+  window.superskpSync={ jadwal:jadwal, sinkron:sinkron, simpanPdf:simpanPdf, simpanDocs:simpanDocs, sambungDiam:sambungDiam };
   btn.addEventListener("click",function(){ sinkron(); });
   document.addEventListener("superskp-token",function(){ sinkron(); });
   window.addEventListener("online",function(){ if(A.sah()) sinkron(); });
