@@ -80,7 +80,7 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 @media print{html,body{height:auto!important;overflow:visible!important;background:#fff!important;display:block!important}:root{padding:0!important}body::before{display:none}.wrap,nav,#sheet,#toast,.fab,.pbar{display:none!important}#prev{position:static;display:block!important;background:#fff;padding:0;overflow:visible}.paper{padding:0;max-width:none;border-radius:0}}
 </style>
 
-/* SUPER SKP — micro-interaksi dan animasi tombol/navigasi */
+<!-- Lapisan micro-interaksi dan animasi tombol/navigasi -->
 <style id="superskp-motion-enhancement">
 :root {
   --skp-motion-fast: 160ms;
@@ -143,6 +143,23 @@ button:disabled, .btn:disabled {
 }
 </style>
 
+<style id="superskp-layout-fix">
+/* Tata letak dashboard sesuai referensi: sidebar kiri, konten fleksibel */
+html { width:100%; min-width:0; }
+body { width:100%; min-width:0; flex-direction:row-reverse; }
+main { box-sizing:border-box; min-width:0; width:calc(100% - 74px); max-width:none; margin:0; padding:20px 20px 110px; }
+nav { box-sizing:border-box; flex-direction:column; justify-content:flex-start; width:74px; min-width:74px; padding:70px 6px 18px; gap:24px; border-radius:0; border-top:0; border-right:1px solid var(--line); }
+nav a, nav button { max-width:100%; }
+.wrap, main, section, .card, .panel { box-sizing:border-box; }
+img, video, canvas, table { max-width:100%; }
+.fab { right:20px; bottom:28px; }
+#toast { bottom:28px; }
+@media (max-width:767px) {
+  main { padding:16px 14px 90px; }
+  nav { width:74px; min-width:74px; padding-top:70px; gap:24px; }
+  .fab { right:16px; bottom:calc(28px + env(safe-area-inset-bottom,0px)); }
+}
+</style>
 </head>
 <body>
 <style>
