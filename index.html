@@ -104,6 +104,65 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 .anb .ring circle{stroke-dasharray:170;stroke-dashoffset:170;transition:stroke-dashoffset .65s ease}
 .anb.rg .ring{opacity:1}.anb.rg .ring circle{stroke-dashoffset:0}
 </style>
+<style id="rraBot">
+.aiw{margin:8px 0 4px}
+.aib{padding:9px 14px!important;font-size:13px!important;gap:7px!important}
+.aib svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.aib.ld{opacity:.7;pointer-events:none}
+.ain{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.air{margin-top:10px;padding:12px;border-radius:14px;background:rgba(99,102,241,.12);border:1px solid var(--line)}
+.air.err{border-color:#ef4444;background:rgba(239,68,68,.1)}
+.air b{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.air p{margin:0 0 10px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;color:var(--text)}
+.air .ra{display:flex;gap:8px}
+.air .btn{padding:8px 14px;font-size:12.5px}
+</style>
+<style id="rraChat">
+.rbot{position:fixed;right:18px;bottom:calc(156px + env(safe-area-inset-bottom,0px));z-index:7;width:64px;height:64px;padding:5px;border-radius:50%;border:1px solid var(--line);cursor:pointer;color:#fff;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.3),rgba(99,102,241,.4) 62%),var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(99,102,241,.5),0 0 28px rgba(33,211,238,.35);animation:rbPop .7s cubic-bezier(.2,1.4,.4,1),rbFloat 3.4s ease-in-out .7s infinite}
+.rbot::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(33,211,238,.6);animation:rbRing 2.6s ease-out infinite;pointer-events:none}
+.rbot:active{transform:scale(.92)}
+@keyframes rbPop{from{transform:scale(0) rotate(-30deg)}}
+@keyframes rbFloat{50%{transform:translateY(-8px)}}
+@keyframes rbRing{from{transform:scale(1);opacity:.8}to{transform:scale(1.5);opacity:0}}
+.mas{width:100%;height:100%;display:block;overflow:visible}
+.mas .cape{transform-box:fill-box;transform-origin:50% 0;animation:rbCape 1.6s ease-in-out infinite}
+@keyframes rbCape{50%{transform:skewX(-7deg) scaleY(1.05)}}
+.mas .flame{transform-box:fill-box;transform-origin:50% 0;animation:rbFlame .4s ease-in-out infinite alternate}
+@keyframes rbFlame{to{transform:scaleY(1.6);opacity:.55}}
+.mas .eyes{transform-box:fill-box;transform-origin:center;animation:rbBlink 4s infinite}
+@keyframes rbBlink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.think .mas .eyes{animation:rbScan .7s ease-in-out infinite alternate}
+@keyframes rbScan{from{transform:translateX(-2.5px)}to{transform:translateX(2.5px)}}
+.rbtip{position:fixed;right:90px;bottom:calc(172px + env(safe-area-inset-bottom,0px));z-index:7;padding:8px 12px;border-radius:14px 14px 4px 14px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--text);font-size:12.5px;font-weight:600;animation:rbTip 6s ease forwards;pointer-events:none}
+@keyframes rbTip{0%,8%{opacity:0;transform:translateX(10px)}15%,85%{opacity:1;transform:none}100%{opacity:0;visibility:hidden}}
+.rbp{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));height:min(72vh,580px);z-index:40;display:none;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--bg);border:1px solid var(--line);box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.rbp.open{display:flex;transform-origin:bottom right;animation:rbOpen .3s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes rbOpen{from{opacity:0;transform:scale(.8) translateY(20px)}}
+@media (min-width:520px){.rbp{left:auto;right:18px;width:400px}}
+.rbh{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(168,85,247,.18))}
+.rbh .mas{width:38px;height:38px;flex:none}
+.rbh div{flex:1;line-height:1.25}.rbh b{font-size:14px;color:var(--text)}.rbh small{display:block;font-size:11px;color:var(--muted)}
+.rbh button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--glass2);color:var(--text);cursor:pointer;font-size:16px}
+.rbm{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.rbb{max-width:88%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.55;overflow-wrap:anywhere;animation:rbIn .25s ease}
+@keyframes rbIn{from{opacity:0;transform:translateY(8px)}}
+.rbb.u{align-self:flex-end;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;border-bottom-right-radius:5px}
+.rbb.b{align-self:flex-start;background:var(--glass2);border:1px solid var(--line);color:var(--text);border-bottom-left-radius:5px}
+.rbb.err{border-color:#ef4444}
+.rbb p{margin:0 0 6px}.rbb p:last-child{margin:0}.rbb ul{margin:4px 0 4px 18px;padding:0}
+.rbd{display:inline-flex;gap:4px;padding:3px 0}.rbd i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:rbDot 1s infinite}
+.rbd i:nth-child(2){animation-delay:.15s}.rbd i:nth-child(3){animation-delay:.3s}
+@keyframes rbDot{50%{transform:translateY(-5px);background:#21d3ee}}
+.rbs{display:flex;gap:8px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}.rbs::-webkit-scrollbar{display:none}
+.rbs button{flex:none;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--glass2);color:var(--text);font:600 12px inherit;font-family:inherit;cursor:pointer}
+.rbf{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);align-items:flex-end}
+.rbf textarea{flex:1;resize:none;max-height:96px;padding:11px 13px;border-radius:14px;border:1px solid var(--line);background:var(--glass2);color:var(--text);font:14px inherit;font-family:inherit;outline:none}
+.rbf textarea:focus{border-color:#21d3ee}
+.rbf button{width:44px;height:44px;flex:none;border:0;border-radius:14px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#6366f1,#a855f7);box-shadow:0 6px 18px rgba(99,102,241,.45);display:flex;align-items:center;justify-content:center}
+.rbf button:disabled{opacity:.5}
+.rbf svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rbn{font-size:10.5px;color:var(--muted);text-align:center;padding:0 12px 10px}
+</style>
 </head>
 <body>
 <style>
@@ -1110,6 +1169,112 @@ if(so){
     return r;
   };
 }
+})();
+</script>
+<script>
+/* Bot AI: rapikan uraian kegiatan lewat perantara Google Apps Script (kunci Gemini tidak ada di sini) */
+(function(){
+var PROXY="https://script.google.com/macros/s/AKfycbwnHERNNW8WKn2oM_XpuCvn9r4uv8rQfZGVq3uiyWFxF_gbWa3dtIOZ5tR7NMiRj_ly/exec";
+var $=function(i){return document.getElementById(i)};
+var SPARK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></svg>';
+function info(t){if(typeof toast==="function")toast(t)}
+function pesan(box,t){box.className="air err";box.textContent="";var p=document.createElement("p");p.textContent=t;box.appendChild(p);box.hidden=false}
+function hasil(box,t){
+  var ta=$("fUr");box.className="air";box.textContent="";
+  var b=document.createElement("b");b.textContent="Saran AI";
+  var p=document.createElement("p");p.textContent=t;
+  var r=document.createElement("div");r.className="ra";
+  var ok=document.createElement("button");ok.type="button";ok.className="btn";ok.textContent="Pakai";
+  var no=document.createElement("button");no.type="button";no.className="btn ghost";no.textContent="Tutup";
+  ok.onclick=function(){ta.value=t;box.hidden=true;info("Uraian diganti")};
+  no.onclick=function(){box.hidden=true};
+  r.appendChild(ok);r.appendChild(no);box.appendChild(b);box.appendChild(p);box.appendChild(r);box.hidden=false;
+}
+async function jalan(){
+  var ta=$("fUr"),btn=$("aiRapi"),box=$("aiHasil"),lbl=btn.querySelector("span"),teks=ta.value.trim();
+  if(teks.length<5){info("Tulis uraian dulu");ta.focus();return}
+  if(!navigator.onLine){pesan(box,"Tidak ada internet. Coba lagi nanti.");return}
+  btn.classList.add("ld");lbl.textContent="Merapikan...";box.hidden=true;
+  try{
+    var tup="";try{var sel=$("fTup"),tt=S.tupoksi.find(function(x){return x.id===sel.value});if(tt)tup=tt.teks}catch(e){}
+    var token=await window.superskpAuth.dapat();
+    var prompt="Rapikan uraian kegiatan berikut menjadi 1 sampai 2 kalimat dalam bahasa Indonesia baku dan formal, diawali kata kerja, tanpa menambah fakta atau angka yang tidak ada di uraian.\n"+(tup?"Tupoksi terkait: "+tup+"\n":"")+"Uraian: "+teks;
+    var res=await fetch(PROXY,{method:"POST",body:JSON.stringify({token:token,prompt:prompt})});
+    var data=await res.json();
+    if(data.error)throw new Error(data.error);
+    var t=String(data.text||"").replace(/\*\*/g,"").replace(/^[\s"'\u201c\u201d]+|[\s"'\u201c\u201d]+$/g,"");
+    if(!t)throw new Error("Jawaban kosong.");
+    hasil(box,t);
+  }catch(e){
+    pesan(box,e instanceof TypeError?"Gagal terhubung ke perantara. Periksa internet lalu coba lagi.":"Gagal: "+(e&&e.message||e));
+  }finally{btn.classList.remove("ld");lbl.textContent="Rapikan dengan AI"}
+}
+function pasang(){
+  var ta=$("fUr");if(!ta||$("aiRapi"))return;
+  var w=document.createElement("div");w.className="aiw";
+  w.innerHTML='<button type="button" class="btn ghost aib" id="aiRapi">'+SPARK+'<span>Rapikan dengan AI</span></button><div class="ain">Teks uraian dikirim ke Gemini. Periksa kembali hasilnya sebelum dipakai.</div><div class="air" id="aiHasil" hidden></div>';
+  ta.insertAdjacentElement("afterend",w);
+  $("aiRapi").onclick=jalan;
+}
+var os=window.openSheet;
+window.openSheet=function(){var r=os.apply(this,arguments);try{pasang()}catch(e){}return r};
+})();
+</script>
+<script>
+/* Bot AI melayang "Si Bot": tanya SKP atau hal lain, lewat perantara Apps Script */
+(function(){
+var PROXY="https://script.google.com/macros/s/AKfycbwnHERNNW8WKn2oM_XpuCvn9r4uv8rQfZGVq3uiyWFxF_gbWa3dtIOZ5tR7NMiRj_ly/exec";
+var $=function(i){return document.getElementById(i)};
+var msgs=[],busy=false,uid=0;
+function mas(){var k=++uid;return '<svg class="mas" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="rc'+k+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a855f7"/><stop offset="1" stop-color="#6366f1"/></linearGradient><linearGradient id="rh'+k+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset="1" stop-color="#b9c9ff"/></linearGradient></defs><g class="flame"><ellipse cx="32" cy="55" rx="6" ry="4" fill="#22e0ff"/></g><g class="cape"><path d="M20 34C9 38 6 50 11 61c8-5 14-9 21-10 7 1 13 5 21 10 5-11 2-23-9-27z" fill="url(#rc'+k+')"/></g><rect x="23" y="36" width="18" height="15" rx="7" fill="#12306e" stroke="#22e0ff" stroke-width="1.2"/><circle cx="32" cy="43.5" r="3.2" fill="#22e0ff"/><circle cx="15.5" cy="24" r="3" fill="#6366f1"/><circle cx="48.5" cy="24" r="3" fill="#6366f1"/><rect x="17" y="11" width="30" height="26" rx="12" fill="url(#rh'+k+')"/><rect x="21.5" y="18" width="21" height="12" rx="6" fill="#0a1535"/><g class="eyes"><circle cx="27.5" cy="24" r="2.4" fill="#22e0ff"/><circle cx="36.5" cy="24" r="2.4" fill="#22e0ff"/></g><path d="M32 11V6" stroke="#b9c9ff" stroke-width="1.6" stroke-linecap="round"/><circle cx="32" cy="5" r="2.2" fill="#a855f7"/></svg>'}
+var SEND='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>';
+var SUG=["Apa itu SKP?","Contoh uraian kegiatan harian","Cara menyusun rencana hasil kerja","Tips menulis output kegiatan"];
+var bot=document.createElement("button");bot.className="rbot";bot.type="button";bot.id="rbBot";bot.setAttribute("aria-label","Buka asisten Si Bot");bot.innerHTML=mas();
+var tip=document.createElement("div");tip.className="rbtip";tip.textContent="Tanya apa saja!";
+var pn=document.createElement("div");pn.className="rbp";pn.id="rbPanel";pn.setAttribute("role","dialog");pn.setAttribute("aria-label","Asisten SUPER SKP");
+pn.innerHTML='<div class="rbh">'+mas()+'<div><b>Si Bot</b><small>Asisten SUPER SKP</small></div><button type="button" id="rbClr" aria-label="Hapus percakapan" title="Hapus percakapan">&#8635;</button><button type="button" id="rbX" aria-label="Tutup">&#10005;</button></div><div class="rbm" id="rbMsgs" aria-live="polite"></div><div class="rbs" id="rbSug"></div><form class="rbf" id="rbForm"><textarea id="rbIn" rows="1" maxlength="1500" placeholder="Tanya tentang SKP atau apa saja..." aria-label="Pesan"></textarea><button type="submit" id="rbSend" aria-label="Kirim">'+SEND+'</button></form><div class="rbn">Jawaban AI bisa keliru, periksa kembali. Jangan kirim NIP atau kata sandi.</div>';
+document.body.appendChild(bot);document.body.appendChild(tip);document.body.appendChild(pn);
+var box=$("rbMsgs"),inp=$("rbIn"),sug=$("rbSug");
+function toBottom(){box.scrollTop=box.scrollHeight}
+function inline(el,t){t.split("**").forEach(function(p,i){if(!p)return;if(i%2){var b=document.createElement("b");b.textContent=p;el.appendChild(b)}else el.appendChild(document.createTextNode(p))})}
+function render(el,text){
+  var ul=null;
+  String(text).split(/\n+/).forEach(function(l){
+    var m=l.match(/^\s*[-*\u2022]\s+(.*)$/)||l.match(/^\s*\d+[.)]\s+(.*)$/);
+    if(m){if(!ul){ul=document.createElement("ul");el.appendChild(ul)}var li=document.createElement("li");inline(li,m[1]);ul.appendChild(li)}
+    else if(l.trim()){ul=null;var p=document.createElement("p");inline(p,l.trim());el.appendChild(p)}
+  });
+}
+function add(role,text,err){var d=document.createElement("div");d.className="rbb "+(role==="u"?"u":"b")+(err?" err":"");if(role==="u")d.textContent=text;else render(d,text);box.appendChild(d);toBottom();return d}
+function typing(){var d=document.createElement("div");d.className="rbb b";d.innerHTML='<span class="rbd"><i></i><i></i><i></i></span>';box.appendChild(d);toBottom();return d}
+function sapa(){add("b","Halo! Aku **Si Bot**, asisten SUPER SKP. Tanya apa saja soal SKP, uraian kegiatan, atau hal lain di luar SKP.");
+  sug.textContent="";SUG.forEach(function(t){var b=document.createElement("button");b.type="button";b.textContent=t;b.onclick=function(){kirim(t)};sug.appendChild(b)})}
+function buka(){pn.classList.add("open");bot.style.display="none";tip.style.display="none";if(!box.children.length)sapa();setTimeout(function(){inp.focus()},320)}
+function tutup(){pn.classList.remove("open");bot.style.display=""}
+async function kirim(t){
+  t=String(t||"").trim();if(!t||busy)return;
+  if(!navigator.onLine){add("b","Tidak ada internet. Coba lagi nanti.",true);return}
+  busy=true;$("rbSend").disabled=true;sug.textContent="";
+  add("u",t);msgs.push({role:"user",text:t});inp.value="";inp.style.height="";
+  var ty=typing();bot.classList.add("think");pn.classList.add("think");
+  try{
+    var token=await window.superskpAuth.dapat();
+    var res=await fetch(PROXY,{method:"POST",body:JSON.stringify({token:token,messages:msgs.slice(-10)})});
+    var data=await res.json();
+    if(data.error)throw new Error(data.error);
+    var a=String(data.text||"").trim();if(!a)throw new Error("Jawaban kosong.");
+    ty.remove();add("b",a);msgs.push({role:"bot",text:a});
+  }catch(e){
+    ty.remove();msgs.pop();
+    add("b",e instanceof TypeError?"Gagal terhubung ke perantara. Periksa internet lalu coba lagi.":"Gagal: "+(e&&e.message||e),true);
+  }finally{busy=false;$("rbSend").disabled=false;bot.classList.remove("think");pn.classList.remove("think");inp.focus()}
+}
+bot.onclick=buka;$("rbX").onclick=tutup;
+$("rbClr").onclick=function(){if(busy)return;msgs=[];box.textContent="";sapa()};
+$("rbForm").onsubmit=function(e){e.preventDefault();kirim(inp.value)};
+inp.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey&&matchMedia("(hover:hover)").matches){e.preventDefault();kirim(inp.value)}});
+inp.addEventListener("input",function(){inp.style.height="auto";inp.style.height=Math.min(inp.scrollHeight,96)+"px"});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&pn.classList.contains("open"))tutup()});
 })();
 </script>
 </body>
