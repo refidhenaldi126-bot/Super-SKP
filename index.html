@@ -79,6 +79,31 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{html,body{height:auto!important;overflow:visible!important;background:#fff!important;display:block!important}:root{padding:0!important}body::before{display:none}.wrap,nav,#sheet,#toast,.fab,.pbar{display:none!important}#prev{position:static;display:block!important;background:#fff;padding:0;overflow:visible}.paper{padding:0;max-width:none;border-radius:0}}
 </style>
+<style id="rraAnim">
+.anb{position:relative;box-sizing:border-box;white-space:nowrap;overflow:visible;padding-left:46px;transition:width .45s cubic-bezier(.7,0,.2,1),border-radius .45s,transform .15s,box-shadow .3s}
+#btnLogin.anb{padding-left:54px;padding-right:22px}
+#btnLogin.anb:disabled{opacity:1}
+.anb[data-busy]{pointer-events:none}
+.anb.ci{width:var(--h)!important;padding:0!important;border-radius:999px}
+.anb-del{background:linear-gradient(135deg,#ff5d73,#c0264b)!important;box-shadow:0 8px 22px rgba(255,70,100,.4)!important}
+.anb .lbl{display:inline-flex}.anb .lbl span{display:inline-block}
+.anb .ico{position:absolute;left:16px;top:50%;width:22px;height:22px;transform:translate(0,-50%);fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;overflow:visible;transition:left .45s cubic-bezier(.7,0,.2,1),transform .45s cubic-bezier(.7,0,.2,1)}
+#btnLogin.anb .ico{left:20px;width:24px;height:24px}
+.anb.ci .ico{left:50%;transform:translate(-50%,-50%)}
+.anb.ok .ico{animation:rraPop .35s ease}
+@keyframes rraPop{50%{transform:translate(-50%,-50%) scale(1.3)}}
+.anb .lid{transform-box:fill-box;transform-origin:0% 100%;transition:transform .25s}
+.anb.open .lid{transform:rotate(-30deg) translateY(-1px)}
+.anb .fillr{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);transition:transform .25s}
+.anb.full .fillr{transform:scaleY(1)}
+.anb .dr{transform-box:fill-box;transform-origin:0% 50%;transition:transform .35s}
+.anb.open .dr{transform:scaleX(.32) skewY(-7deg)}
+.anb .glow{opacity:0;transition:opacity .3s}
+.anb.open .glow{opacity:.5}.anb.full .glow{opacity:1}
+.anb .ring{position:absolute;left:50%;top:50%;width:calc(var(--h,50px) + 10px);height:calc(var(--h,50px) + 10px);transform:translate(-50%,-50%) rotate(-90deg);pointer-events:none;opacity:0;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;transition:opacity .2s}
+.anb .ring circle{stroke-dasharray:170;stroke-dashoffset:170;transition:stroke-dashoffset .65s ease}
+.anb.rg .ring{opacity:1}.anb.rg .ring circle{stroke-dashoffset:0}
+</style>
 </head>
 <body>
 <style>
@@ -1004,6 +1029,87 @@ render();
   document.addEventListener("superskp-token",function(){ sinkron(); });
   window.addEventListener("online",function(){ if(A.sah()) sinkron(); });
   if(A.user()) setTimeout(function(){ A.dapat().then(function(){ sinkron(); }).catch(function(){ status("☁ Ketuk untuk sinkron"); }); },1500);
+})();
+</script>
+<script>
+/* RRA UI: tombol beranimasi. Hapus = huruf masuk tong sampah. Masuk dan Keluar = huruf masuk pintu. */
+(function(){
+var $=function(i){return document.getElementById(i)};
+var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,uid=0;
+var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+var RING='<svg class="ring" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="27"/></svg>';
+function icon(k){
+  if(k==="del"){var id="rtc"+(++uid);return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="'+id+'"><path d="M7 8h10l-.8 11a2 2 0 0 1-2 1.8H9.8a2 2 0 0 1-2-1.8z"/></clipPath></defs><g clip-path="url(#'+id+')"><rect class="fillr" x="6" y="8" width="12" height="14" fill="currentColor" stroke="none"/></g><path d="M7 8h10l-.8 11a2 2 0 0 1-2 1.8H9.8a2 2 0 0 1-2-1.8z"/><g class="lid"><path d="M5 6h14"/><path d="M9.5 6V4.5h5V6"/></g></svg>';}
+  return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="3" width="14" height="18" rx="1.5"/><rect class="glow" x="5.9" y="3.9" width="12.2" height="16.2" fill="#fff" stroke="none"/><g class="dr"><path d="M6 4h12v16H6z" fill="rgba(255,255,255,.22)" stroke-width="1.5"/><circle cx="15.6" cy="12.5" r=".9" fill="currentColor" stroke="none"/></g></svg>';
+}
+function build(b,kind,label){
+  b.classList.add("anb","anb-"+kind);b.setAttribute("aria-label",label);
+  b.innerHTML=icon(kind)+'<span class="lbl">'+Array.from(label).map(function(c){return "<span>"+(c===" "?"\u00a0":c)+"</span>"}).join("")+"</span>"+RING;
+}
+function clean(b){
+  ["ci","rg","ok","full","open"].forEach(function(c){b.classList.remove(c)});
+  b.style.width=b.style.height=b.style.flex="";b.style.removeProperty("--h");delete b.dataset.busy;
+  b.querySelectorAll(".lbl span").forEach(function(e){e.getAnimations().forEach(function(a){a.cancel()})});
+}
+async function play(b,commit){
+  if(b.dataset.busy)return;b.dataset.busy="1";
+  var g=b._gen,st=async function(ms){await sleep(ms);if(b._gen!==g)throw 0};
+  try{
+    var r=b.getBoundingClientRect();
+    b.style.width=r.width+"px";b.style.height=r.height+"px";b.style.flex="none";b.style.setProperty("--h",r.height+"px");
+    var L=Array.from(b.querySelectorAll(".lbl span")),ico=b.querySelector(".ico"),an=[];
+    if(reduce){b.classList.add("ci");await st(350);b.classList.add("rg");await st(700);}
+    else{
+      b.classList.add("open");await st(160);
+      var ib=ico.getBoundingClientRect(),tx=ib.left+ib.width/2,ty=ib.top+ib.height/2,per=Math.max(35,Math.min(110,900/L.length));
+      an=L.map(function(el,i){
+        var q=el.getBoundingClientRect(),dx=tx-(q.left+q.width/2),dy=ty-(q.top+q.height/2);
+        return el.animate([
+          {transform:"translate(0,0) rotate(0) scale(1)",opacity:1},
+          {transform:"translate("+dx*.5+"px,-22px) rotate(-16deg) scale(1)",opacity:1,offset:.42},
+          {transform:"translate("+dx+"px,"+dy+"px) rotate(35deg) scale(.15)",opacity:0}
+        ],{duration:480,delay:i*per,easing:"cubic-bezier(.45,0,.75,.45)",fill:"forwards"});
+      });
+      await Promise.all(an.map(function(a){return a.finished}));
+      if(b._gen!==g)throw 0;
+      b.classList.remove("open");b.classList.add("full");await st(240);
+      b.classList.add("ci");await st(440);
+      b.classList.add("rg");await st(680);
+      b.classList.add("ok");await st(300);
+    }
+    if(commit)commit();
+    var sh=b.closest("#sheet");
+    if(sh&&!sh.classList.contains("open")){clean(b);return}
+    b.classList.remove("rg","ok","full","ci");await st(460);
+    an.forEach(function(a){a.cancel()});
+    L.forEach(function(el,i){el.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"none"}],{duration:300,delay:i*40,fill:"backwards"})});
+    await st(L.length*40+300);
+    clean(b);
+  }catch(e){if(e!==0)throw e}
+}
+window.rraAnim={build:build,play:play};
+/* Login: pintu */
+var bl=$("btnLogin");
+if(bl){build(bl,"in","Masuk dengan Google");bl.addEventListener("click",function(){if(bl.disabled)play(bl)})}
+/* Tombol konfirmasi di sheet: Hapus = tong, Keluar = pintu */
+var so=$("sOk");
+if(so){
+  so.removeAttribute("onclick");so._gen=0;
+  so.addEventListener("click",function(){
+    if(!so.classList.contains("anb")){sheetOk();return}
+    var g=so._gen;
+    play(so,function(){if(so._gen===g&&$("sheet").classList.contains("open"))sheetOk()});
+  });
+  var os=window.openSheet;
+  window.openSheet=function(){
+    var r=os.apply(this,arguments),l=arguments[3];
+    so._gen++;
+    ["anb","anb-del","anb-in","ci","rg","ok","full","open"].forEach(function(c){so.classList.remove(c)});
+    so.removeAttribute("style");so.removeAttribute("aria-label");delete so.dataset.busy;
+    if(l==="Hapus")build(so,"del","Hapus");else if(l==="Keluar")build(so,"in","Keluar");
+    return r;
+  };
+}
 })();
 </script>
 </body>
