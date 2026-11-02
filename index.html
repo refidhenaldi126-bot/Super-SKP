@@ -201,7 +201,8 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
 #demo .ddots{display:flex;gap:7px}#demo .ddots i{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.25);transition:all .25s}#demo .ddots i.on{width:26px;background:linear-gradient(90deg,#22E0FF,#8B5CF6)}
 #demo .dnext{min-width:132px;padding:13px 24px;border:0;border-radius:14px;font-size:15px;font-weight:700;color:#fff;background:linear-gradient(135deg,#2F8BFF,#8B5CF6);box-shadow:0 8px 24px rgba(99,102,241,.35);cursor:pointer;font-family:inherit}
 #demo .dnext:active{transform:scale(.97)}
-#kunci{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);overflow:hidden}
+#kunci{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#kunci .kcard{margin:auto;flex:none}
 #kunci .kbg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #kunci .kbg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:kdr 16s ease-in-out infinite alternate}
 #kunci .kbg i:nth-child(1){width:340px;height:340px;background:#2F8BFF;top:-90px;left:-70px}
@@ -317,10 +318,16 @@ nav{position:relative;z-index:5;display:flex;justify-content:space-around;paddin
     <section class="kp kp1">
       <img class="klogo" id="klogo" alt="Logo SUPER SKP E-Kinerja ASN">
       <h2>Masuk ke <em>SUPER SKP</em></h2>
-      <p class="ksub">Masuk dengan akun Google untuk membuka aplikasi.</p>
+      <form class="kf" id="fLokal" novalidate>
+        <label class="kin"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input id="lUser" type="text" placeholder="Username / NIP" aria-label="Username atau NIP" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label class="kin"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input id="lPass" type="password" placeholder="Kata sandi" aria-label="Kata sandi" autocomplete="current-password"><button type="button" class="keye" id="lEye" aria-label="Tampilkan kata sandi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></label>
+        <p id="pesanLokal" role="alert"></p>
+        <button id="btnLokal" type="submit">Masuk</button>
+      </form>
+      <div class="kor"><span>atau</span></div>
       <button id="btnLogin" type="button">Masuk dengan Google</button>
       <p id="pesanLogin" role="status"></p>
-      <p class="knote">Datamu disimpan di Google Sheet dan Drive milikmu sendiri.</p>
+      <p class="knote">Login Google menyimpan datamu di Google Sheet dan Drive milikmu sendiri.</p>
     </section>
     <section class="kp kp2" inert>
       <h2>Fitur <em>utama</em></h2>
@@ -1383,5 +1390,87 @@ nav[aria-label="Menu utama"]{position:fixed;z-index:30;left:50%;bottom:calc(12px
 })();
 </script>
 
+<style id="rraFix3">
+/* ===== Latar khas RRA UI: aurora + grid halus ===== */
+body{background:transparent!important}
+body::before,body::after{content:"";position:fixed;pointer-events:none;z-index:-1}
+body::before{inset:-25%;background:radial-gradient(38% 34% at 16% 14%,rgba(34,211,238,.26),transparent 70%),radial-gradient(34% 32% at 84% 18%,rgba(99,102,241,.32),transparent 70%),radial-gradient(40% 38% at 72% 88%,rgba(168,85,247,.27),transparent 70%),radial-gradient(30% 30% at 8% 84%,rgba(37,99,235,.22),transparent 70%);animation:rraAurora 38s ease-in-out infinite alternate;will-change:transform}
+body::after{inset:0;background:linear-gradient(rgba(148,163,184,.07) 1px,transparent 1px) 0 0/56px 56px,linear-gradient(90deg,rgba(148,163,184,.07) 1px,transparent 1px) 0 0/56px 56px,repeating-linear-gradient(115deg,transparent 0 130px,rgba(34,211,238,.04) 130px 131px);-webkit-mask-image:radial-gradient(ellipse at 50% 38%,#000 18%,transparent 78%);mask-image:radial-gradient(ellipse at 50% 38%,#000 18%,transparent 78%)}
+@keyframes rraAurora{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,2%,0) scale(1.08)}}
+@media (prefers-color-scheme:light){body::before{opacity:.6}body::after{background:linear-gradient(rgba(99,102,241,.09) 1px,transparent 1px) 0 0/56px 56px,linear-gradient(90deg,rgba(99,102,241,.09) 1px,transparent 1px) 0 0/56px 56px}}
+@media print{body::before,body::after{display:none}}
+/* ===== Menu bawah: ringkas, tidak menghalangi isi ===== */
+@media (min-width:768px){body{flex-direction:column}}
+nav[aria-label="Menu utama"]{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:auto;max-width:calc(100% - 24px);height:auto;flex-direction:row;justify-content:center;gap:4px;padding:7px;border:1px solid rgba(148,163,184,.24);border-radius:22px}
+nav[aria-label="Menu utama"] .ni{flex:none;width:76px;min-height:52px;gap:3px;font-size:11px}
+@media (max-width:560px){nav[aria-label="Menu utama"]{width:calc(100% - 20px);bottom:calc(8px + env(safe-area-inset-bottom,0px))}nav[aria-label="Menu utama"] .ni{flex:1;width:auto;min-width:0}}
+nav[aria-label="Menu utama"] .ni{color:#a9b8d6}
+nav[aria-label="Menu utama"] .ni.active{color:#67e8f9}
+#toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+@media (min-width:768px){.rbot{right:28px;bottom:calc(28px + 56px + 16px)}.rbtip{right:100px;bottom:calc(28px + 56px + 32px)}}
+/* ===== Login username / NIP ===== */
+#kunci .kcard{height:620px}
+#kunci .kp{gap:10px;padding:34px 52px}
+#kunci .klogo{width:64px;height:64px;border-radius:18px}
+#kunci .kf{display:flex;flex-direction:column;gap:10px;width:100%}
+#kunci .kin{display:flex;align-items:center;gap:10px;padding:0 14px;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#9db0d6;transition:.25s}
+#kunci .kin:focus-within{border-color:#22d3ee;color:#22d3ee;box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+#kunci .kin svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#kunci .kin input{flex:1;min-width:0;width:auto;height:100%;padding:0;margin:0;background:none;border:0;border-radius:0;box-shadow:none;outline:0;color:#eef3ff;font:500 14px 'Poppins',system-ui,sans-serif}
+#kunci .kin input::placeholder{color:#8da2cf}
+#kunci .keye{display:flex;background:none;border:0;padding:4px;color:inherit;cursor:pointer}
+#kunci .kor{display:flex;align-items:center;gap:10px;color:#8da2cf;font-size:11.5px}
+#kunci .kor:before,#kunci .kor:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.16)}
+#pesanLokal{margin:0;min-height:16px;color:#fca5a5;font-size:12.5px;line-height:1.4}
+#btnLokal{position:relative;padding:14px 18px;border:0;border-radius:14px;font-size:15px;font-weight:700;color:#fff;background:linear-gradient(135deg,#2f8bff,#8b5cff);box-shadow:0 10px 28px rgba(70,110,255,.5);cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .25s}
+#btnLokal:hover{box-shadow:0 14px 36px rgba(34,224,255,.45)}
+#btnLokal:active{transform:scale(.97)}
+#btnLokal.anb{padding-left:54px;padding-right:22px}
+#btnLokal.anb .ico{left:20px;width:24px;height:24px}
+#kunci #btnLogin{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);box-shadow:none}
+#kunci #btnLogin:hover{background:rgba(255,255,255,.12);box-shadow:none}
+.kshake{animation:kshake .4s}
+@keyframes kshake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@media (max-width:720px){
+#kunci .kcard{height:710px}
+#kunci .kp{height:540px;padding:16px 26px;gap:9px}
+#kunci .kcard.ki .kov{transform:translateY(540px)}
+}
+</style>
+<script>
+/* Login username / NIP. Catatan: ini kunci tampilan di perangkat, bukan pengaman data. */
+(function(){
+var AKUN=[{u:"admin",h:"223da1599094fb9143b76641b17212d4270848ac163b233ce2d4ad0bffabc2f0",nama:"Admin"}];
+var $=function(i){return document.getElementById(i)};
+var f=$("fLokal"),btn=$("btnLokal"),ps=$("pesanLokal"),gagal=0,tutupSampai=0;
+if(!f)return;
+if(window.rraAnim)rraAnim.build(btn,"in","Masuk");
+function pesan(t){ps.textContent=t||""}
+async function sandi(t){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")}
+$("lEye").onclick=function(){var i=$("lPass");i.type=i.type==="password"?"text":"password"};
+f.addEventListener("submit",async function(e){
+  e.preventDefault();pesan("");
+  var u=$("lUser").value.trim().toLowerCase(),p=$("lPass").value,now=Date.now();
+  if(now<tutupSampai){pesan("Terlalu banyak percobaan. Coba lagi dalam "+Math.ceil((tutupSampai-now)/1000)+" detik.");return}
+  if(!u||!p){pesan("Isi username/NIP dan kata sandi.");return}
+  if(!(window.crypto&&crypto.subtle)){pesan("Buka aplikasi lewat alamat https agar login bisa dipakai.");return}
+  var h=await sandi("superskp-rra|"+u+"|"+p),a=AKUN.filter(function(x){return x.u===u&&x.h===h})[0];
+  if(!a){
+    gagal++;f.classList.remove("kshake");void f.offsetWidth;f.classList.add("kshake");
+    if(gagal>=5){tutupSampai=Date.now()+30000;gagal=0;pesan("Terlalu banyak percobaan. Coba lagi dalam 30 detik.")}
+    else pesan("Username/NIP atau kata sandi salah.");
+    return;
+  }
+  var user={email:a.u+"@lokal",name:a.nama,sub:"lokal-"+a.u,lokal:true};
+  var masuk=function(){try{localStorage.setItem("superskp_user",JSON.stringify(user))}catch(e){}location.reload()};
+  if(window.rraAnim)rraAnim.play(btn,masuk);else masuk();
+});
+/* Login lokal tidak punya izin Google: beri pesan yang jelas untuk fitur yang butuh Google */
+var A=window.superskpAuth;
+if(A&&A.dapat){var asli=A.dapat;A.dapat=function(p){var u=null;try{u=A.user()}catch(e){}
+  if(u&&u.lokal)return Promise.reject(new Error("Fitur ini perlu login Google. Keluar, lalu masuk dengan Google."));
+  return asli.call(A,p)}}
+})();
+</script>
 </body>
 </html>
